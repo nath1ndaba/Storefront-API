@@ -170,12 +170,10 @@ try
     app.UseSerilogRequestLogging();
     app.UseCors("AllowAll");
 
-    // ONLY NSwag
-    if (app.Environment.IsDevelopment())
-    {
-        app.UseOpenApi();      // /swagger/v1/swagger.json
-        app.UseSwaggerUi();    // /swagger
-    }
+
+    app.UseOpenApi();      // /swagger/v1/swagger.json
+    app.UseSwaggerUi();    // /swagger
+
 
     // Map endpoints
     app.MapApiEndpoints();
