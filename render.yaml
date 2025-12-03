@@ -1,0 +1,16 @@
+# Render Configuration
+# This file enables automatic deployment to Render.com
+
+services:
+  - type: web
+    name: storefront-api
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:$PORT
+    healthCheckPath: /
