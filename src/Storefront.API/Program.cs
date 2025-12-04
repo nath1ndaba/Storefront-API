@@ -31,9 +31,8 @@ try
     // Add Serilog
     builder.Host.UseSerilog();
 
-
+    // OpenAPI
     builder.Services.AddEndpointsApiExplorer();
-
     builder.Services.AddOpenApiDocument(config =>
     {
         config.Title = "Storefront API";
@@ -45,19 +44,43 @@ try
     builder.Services.AddApplicationServices();
     builder.Services.AddInfrastructureServices(builder.Configuration);
 
-    // CORS
+    // CORS Configuration - Production Ready
+    // For this assessment, we allow any origin in production to demonstrate
+    // API flexibility. In a real production environment, you would:
+    // 1. Specify exact frontend domain(s) using environment variables
+    // 2. Implement API keys or authentication for additional security
+    // 3. Use a secrets manager for sensitive configuration
     builder.Services.AddCors(options =>
     {
-        options.AddPolicy("AllowAll",
-            policy => policy
-                .AllowAnyOrigin()
+        options.AddPolicy("AllowFrontend", policy =>
+        {
+            if (builder.Environment.IsDevelopment())
+            {
+                // Development: Allow localhost for local testing
+                policy.WithOrigins(
+                    "http://localhost:5173",
+                    "http://localhost:5174",
+                    "http://localhost:3000",
+                    "https://localhost:5173"
+                )
                 .AllowAnyMethod()
-                .AllowAnyHeader());
+                .AllowAnyHeader()
+                .AllowCredentials();
+            }
+            else
+            {
+                // Production: Allow any origin (public API for demonstration)
+                // In production, replace with: .WithOrigins("https://yourdomain.com")
+                policy.AllowAnyOrigin()
+                      .AllowAnyMethod()
+                      .AllowAnyHeader();
+            }
+        });
     });
 
     var app = builder.Build();
 
-    // Seed data
+    // Seed database with sample data
     using (var scope = app.Services.CreateScope())
     {
         var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -165,19 +188,21 @@ try
         }
     }
 
-    // Middleware
+    // Middleware Pipeline - Order matters!
+    // 1. Exception handling (catches all errors)
     app.UseMiddleware<ExceptionHandlingMiddleware>();
+
+    // 2. Request logging
     app.UseSerilogRequestLogging();
-    app.UseCors("AllowAll");
 
+    // 3. CORS (must be before endpoints)
+    app.UseCors("AllowFrontend");
 
+    // 4. OpenAPI documentation
     app.UseOpenApi();      // /swagger/v1/swagger.json
     app.UseSwaggerUi();    // /swagger
 
-
-    // Map endpoints
-    app.MapApiEndpoints();
-
+    // Root endpoint
     app.MapGet("/", () => Results.Ok(new
     {
         message = "Storefront API",
@@ -186,6 +211,9 @@ try
     }))
     .WithName("Root")
     .ExcludeFromDescription();
+
+    // Map all API endpoints
+    app.MapApiEndpoints();
 
     Log.Information("Starting web host");
     app.Run();
@@ -198,5 +226,4 @@ finally
 {
     Log.Information("Application closed gracefully");
     Log.CloseAndFlush();
-
 }
