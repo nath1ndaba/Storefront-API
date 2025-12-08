@@ -1,4 +1,5 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Mvc;
 using Storefront.Application.Cart.Commands.AddToCart;
 using Storefront.Application.Cart.Commands.ClearCart;
 using Storefront.Application.Cart.Commands.RemoveFromCart;
@@ -20,10 +21,10 @@ public static class CartEndpoints
         {
             var query = new GetCartQuery(sessionId);
             var result = await sender.Send(query);
-            
+
             if (result == null)
                 return Results.NotFound(ApiResponse<CartDto>.ErrorResponse("Cart not found"));
-            
+
             return Results.Ok(ApiResponse<CartDto>.SuccessResponse(result));
         })
         .WithName("GetCart")
@@ -40,9 +41,9 @@ public static class CartEndpoints
         .Produces<ApiResponse<CartDto>>(StatusCodes.Status201Created)
         .Produces<ApiResponse<CartDto>>(StatusCodes.Status400BadRequest);
 
-        group.MapPatch("/{itemId:int}", async (int itemId, UpdateCartItemDto updateDto, ISender sender) =>
+        group.MapPatch("/{itemId:int}", async (int itemId, [FromQuery] string sessionId, [FromBody] UpdateCartItemDto updateDto, ISender sender) =>
         {
-            var command = new UpdateCartItemCommand(itemId, updateDto);
+            var command = new UpdateCartItemCommand(itemId, sessionId, updateDto);
             var result = await sender.Send(command);
             return Results.Ok(ApiResponse<CartItemDto>.SuccessResponse(result, "Cart item updated successfully"));
         })
