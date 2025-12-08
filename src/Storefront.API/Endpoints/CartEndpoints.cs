@@ -52,9 +52,9 @@ public static class CartEndpoints
         .Produces<ApiResponse<CartItemDto>>(StatusCodes.Status404NotFound)
         .Produces<ApiResponse<CartItemDto>>(StatusCodes.Status400BadRequest);
 
-        group.MapDelete("/{itemId:int}", async (int itemId, ISender sender) =>
+        group.MapDelete("/{itemId:int}", async (int itemId, [FromQuery] string sessionId, ISender sender) =>
         {
-            var command = new RemoveFromCartCommand(itemId);
+            var command = new RemoveFromCartCommand(itemId, sessionId);
             var result = await sender.Send(command);
             return Results.Ok(ApiResponse<bool>.SuccessResponse(result, "Item removed from cart successfully"));
         })
